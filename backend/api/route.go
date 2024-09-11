@@ -1,8 +1,14 @@
 package api
 
-import "fmt"
+import (
+	"filemanager/auth"
 
-func API() {
-	// do something
-	fmt.Println("API")
+	"github.com/gorilla/mux"
+)
+
+func SetupRoutes() *mux.Router {
+	router := mux.NewRouter()
+	router.HandleFunc("/login", auth.Login).Methods("POST")
+	router.HandleFunc("/validate", auth.Validate).Methods("GET")
+	return router
 }

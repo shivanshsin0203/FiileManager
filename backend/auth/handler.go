@@ -3,7 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
-	"time"
+	
 )
 
 type Credentials struct {
@@ -27,13 +27,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Expires:  time.Now().Add(1 * time.Hour),
-		HttpOnly: true,
-	})
-
-	w.Write([]byte("Login successful!"))
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+func Validate(w http.ResponseWriter, r *http.Request){
+	tokenString := r.Header.Get("Authorization")
+    if tokenString == "" {
+        http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+        return
+    }
+	_,err := ValidateToken(tokenString)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	w.Write([]byte("Token is valid"))
 }

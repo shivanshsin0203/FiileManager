@@ -5,7 +5,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var jwtKey = []byte("your-secret-key")
+var jwtKey = []byte("sadc$23r2@*#sdf")
 
 type Claims struct {
 	Email string `json:"email"`
