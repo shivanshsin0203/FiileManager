@@ -53,7 +53,33 @@ export default function EnhancedLoginUpload() {
   };
 
   const handleUpload = async (): Promise<void> => {
-    setUploadProgress(45);
+    
+      if (!file) {
+        setMessage("Please select a file first");
+        return;
+      }
+  
+      try {
+        // Get presigned URL from your backend
+        const response = await axios.get(`http://localhost:8080/generatePresignedURL`, {
+          params: { fileName: file.name },
+        });
+  
+        const presignedURL = response.data;
+        console.log("Presigned URL: ", presignedURL);
+        // Upload the file to S3 using the pre-signed URL
+        await axios.put(presignedURL, file, {
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+  
+        setMessage("Video uploaded successfully!");
+      } catch (error) {
+        setMessage("Failed to upload video: " + error);
+      }
+    
+    setUploadProgress(100);
   };
 
   const handleLogout = (): void => {
