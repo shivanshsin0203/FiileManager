@@ -53,33 +53,34 @@ export default function EnhancedLoginUpload() {
   };
 
   const handleUpload = async (): Promise<void> => {
-    
-      if (!file) {
-        setMessage("Please select a file first");
-        return;
-      }
-  
-      try {
-        // Get presigned URL from your backend
-        const response = await axios.get(`http://localhost:8080/generatePresignedURL`, {
-          params: { fileName: file.name },
-        });
-  
-        const presignedURL = response.data;
-        console.log("Presigned URL: ", presignedURL);
-        // Upload the file to S3 using the pre-signed URL
-        await axios.put(presignedURL, file, {
-          headers: {
-            "Content-Type": file.type,
-          },
-        });
-  
-        setMessage("Video uploaded successfully!");
-      } catch (error) {
-        setMessage("Failed to upload video: " + error);
-      }
-    
-    setUploadProgress(100);
+    if (!file) {
+      setMessage("Please select a file first");
+      return;
+    }
+
+    try {
+      // Get presigned URL from your backend
+      const response = await axios.get(`http://localhost:8080/generatePresignedURL`, {
+        params: { key: file.name + Date.now() },
+      });
+
+      const presignedURL = response.data;
+      console.log("Presigned URL: ", presignedURL);
+
+      // Track upload progress
+      await axios.put(presignedURL, file, {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total 
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total) 
+            : 0;
+          setUploadProgress(percentCompleted);
+        },
+      });
+
+      setMessage("Video uploaded successfully!");
+    } catch (error) {
+      setMessage("Failed to upload video: " + error);
+    }
   };
 
   const handleLogout = (): void => {
@@ -169,6 +170,11 @@ export default function EnhancedLoginUpload() {
                     className="bg-blue-600 h-2.5 rounded-full"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
+                </div>
+                <div className="flex justify-between mt-2 text-gray-600 text-sm">
+                  <span>0%</span>
+                  
+                  <span>100%</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-2 text-center">{uploadProgress}% uploaded</p>
               </div>
