@@ -2,6 +2,7 @@ package main
 
 import (
 	"filemanager/api"
+	"filemanager/redis"
 	"fmt"
 	"net/http"
 
@@ -11,7 +12,8 @@ import (
 func main() {
 	r :=api.SetupRoutes()
     fmt.Println("Starting server on :8080...")
-
+    redis.Init()
+	defer redis.Close()
 	corsHandler := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
         handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
