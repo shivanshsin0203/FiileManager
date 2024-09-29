@@ -17,6 +17,7 @@ func main() {
     rediss.Init()
 	
 	defer rediss.Close()
+	worker.Init()
 	go worker.Worker()
 	corsHandler := handlers.CORS(
         handlers.AllowedOrigins([]string{"*"}),
