@@ -1,4 +1,4 @@
-package redis
+package rediss
 
 import (
 	"context"
@@ -55,7 +55,12 @@ func Enqueue(queueName, item string) error {
 	fmt.Printf("Successfully enqueued item '%s' to queue '%s'\n", item, queueName)
 	return nil
 }
-
+func GetRedisClient() *redis.Client {
+	if rdb == nil {
+		log.Fatal("redis client not initialized. Call Init() first")
+	}
+	return rdb
+}
 // Close closes the Redis connection
 func Close() {
 	if rdb != nil {

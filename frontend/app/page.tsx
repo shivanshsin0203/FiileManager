@@ -60,8 +60,9 @@ export default function EnhancedLoginUpload() {
 
     try {
       // Get presigned URL from your backend
+      const key= file.name + Date.now();
       const response = await axios.get(`http://localhost:8080/generatePresignedURL`, {
-        params: { key: file.name + Date.now() },
+        params: { key: key },
       });
 
       const presignedURL = response.data;
@@ -78,6 +79,7 @@ export default function EnhancedLoginUpload() {
       });
 
       setMessage("Video uploaded successfully!");
+      await axios.post('http://localhost:8080/addQueue', {Queue:"test2",Item:key});
     } catch (error) {
       setMessage("Failed to upload video: " + error);
     }

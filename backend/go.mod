@@ -5,6 +5,7 @@ go 1.23.0
 require github.com/golang-jwt/jwt/v4 v4.5.0
 
 require (
+	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.5 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.27.33 // indirect
