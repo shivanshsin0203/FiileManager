@@ -9,7 +9,8 @@ import (
 	"sync"
 	"time"
 	"path/filepath"
-
+     "os/exec"
+	 "strings"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -91,8 +92,39 @@ func processVideo(s3Key string) {
 
 	log.Printf("Processing video: %s\n", downloadPath)
 	// Add your video processing logic here
-	time.Sleep(5 * time.Second) // Simulating processing time
+	outputDir := filepath.Join(tempDir, "hls", filepath.Base(s3Key))
+	err = os.MkdirAll(outputDir, os.ModePerm)
+	if err != nil {
+		log.Printf("Error creating output directory for %s: %v\n", s3Key, err)
+		return
+	}
 
+	// Prepare FFmpeg command
+	outputPath := filepath.Join(outputDir, "playlist.m3u8")
+	cmd := exec.Command("ffmpeg",
+		"-i", downloadPath,
+		"-profile:v", "baseline", // baseline profile for wider device compatibility
+		"-level", "3.0",
+		"-start_number", "0",
+		"-hls_time", "10", // 10 second segments
+		"-hls_list_size", "0", // keep all segments
+		"-f", "hls",
+		outputPath,
+	)
+
+	// Run FFmpeg command
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error processing video %s: %v\nFFmpeg output: %s\n", s3Key, err, string(output))
+		return
+	}
+	err = uploadHLSToS3(outputDir, s3Key)
+	if err != nil {
+		log.Printf("Error uploading HLS files for %s: %v\n", s3Key, err)
+		return
+	}
+
+	
 	log.Printf("Finished processing video: %s\n", s3Key)
 }
 
@@ -117,7 +149,37 @@ func downloadVideoFromS3(s3Key string) (string, error) {
 
 	return downloadPath, nil
 }
+func uploadHLSToS3(localDir, s3KeyPrefix string) error {
+	err := filepath.Walk(localDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
 
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %v", path, err)
+		}
+		defer file.Close()
+		relativePath := strings.TrimPrefix(path, localDir)  
+		s3Key := filepath.Join(s3KeyPrefix, relativePath)
+		_, err = s3Uploader.Upload(&s3manager.UploadInput{
+			Bucket: aws.String(os.Getenv("S3_BUCKET_PUBLIC")),
+			Key:    aws.String(s3Key),
+			Body:   file,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload file %s: %v", path, err)
+		}
+
+		log.Printf("Uploaded %s to S3: %s\n", path, s3Key)
+		return nil
+	})
+
+	return err
+}
 func Worker() {
 	if err := Init(); err != nil {
 		log.Fatalf("Failed to initialize worker: %v", err)
