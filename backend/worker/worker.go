@@ -88,7 +88,7 @@ func processVideo(s3Key string) {
 		log.Printf("Error downloading video %s: %v\n", s3Key, err)
 		return
 	}
-	
+	defer os.Remove(downloadPath)
 
 	log.Printf("Processing video: %s\n", downloadPath)
 	// Add your video processing logic here
@@ -163,8 +163,18 @@ func uploadHLSToS3(localDir, s3KeyPrefix string) error {
 			return fmt.Errorf("failed to open file %s: %v", path, err)
 		}
 		defer file.Close()
-		relativePath := strings.TrimPrefix(path, localDir)  
+		// Get the relative path of the file inside the localDir
+		relativePath, err := filepath.Rel(localDir, path)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %v", err)
+		}
+
+		// Create the full S3 key: s3KeyPrefix (e.g., my-video-key) + the relative path (e.g., playlist.m3u8, seg0.ts)
+		// This will create 'my-video-key/playlist.m3u8' or 'my-video-key/seg0.ts' in S3
 		s3Key := filepath.Join(s3KeyPrefix, relativePath)
+
+		// Replace backslashes with forward slashes for S3 (important for Windows systems)
+		s3Key = strings.ReplaceAll(s3Key, "\\", "/")
 		_, err = s3Uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(os.Getenv("S3_BUCKET_PUBLIC")),
 			Key:    aws.String(s3Key),

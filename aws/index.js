@@ -24,7 +24,7 @@ app.get('/geturl', async function(req, res) {
 });
 app.get('/getpublicurl', async function(req, res) {
     try {
-        const url=await getObjectUrl("testvideo");
+        const url=await getObjectUrl("unwrapped-shivanshsin0203.mp41728402925303/playlist.m3u8");
         res.status(200).json(url);
     } catch (error) {
         console.log(error);
